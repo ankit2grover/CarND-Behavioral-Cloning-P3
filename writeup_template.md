@@ -109,6 +109,7 @@ The model used an adam optimizer, and the learning rate is tuned from 1e-3 to 1e
 Training data was chosen to keep the vehicle driving on the road. I struggled in creating my own data, that's why used udacity sample data to train the model.
 
 I just added some fake data by flipping the images 180 degree and teaching the model how image with right steering will look like.
+
 ###Model Architecture and Training Strategy
 
 ####1. Solution Design Approach
@@ -173,9 +174,11 @@ To augment the data set, I also flipped images and angles thinking that this wou
 ![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/original.jpg)
 ![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/flip.jpg)
 
+
 Randomly shuffled the data set and put 20% of the data into a validation set. 
 
 After augumentation, I had 12856 number of data samples. I then preprocessed this data by using keras Cropping2D and lambda layers.
 
 I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was 5 as validation accuracy doesn't change much after that. 
+
 I used an adam optimizer so that manually training the learning rate wasn't necessary.

@@ -171,8 +171,8 @@ dense_4 (Dense)                  (None, 1)             11          dense_3[0][0]
 
 To augment the data set, I also flipped images and angles thinking that this would . For example, here is an image that has then been flipped:
 
-![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/original.jpg)
-![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/flip.jpg)
+![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/original.png)
+![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/flip.png)
 
 
 Randomly shuffled the data set and put 20% of the data into a validation set. 

@@ -12,6 +12,7 @@ from keras.optimizers import Adam
 import math
 import random
 import tensorflow as tf
+from helpers.data import read_all_csvs_folders, get_input_shape
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS 
@@ -21,18 +22,20 @@ flags.DEFINE_integer('epo', 7, "The number of epochs.")
 flags.DEFINE_integer('batch', 32, "batch size")
 
 ## Samples of the data.
-samples = []
-with open("Dataset/driving_log.csv") as csvfile:
-	reader = csv.reader(csvfile)
-	for sample in reader:
-		samples.append(sample)
+samples = read_all_csvs_folders('Dataset')
+#image_input_shape = get_input_shape(samples)
 
-## Divided Train and validation data using sci-kit split with factor or 0.2
-train_samples, validation_samples = train_test_split(samples, test_size=0.2)
+print ("Total number of samples {}".format(len(samples)))
+#print ("Image input shape {}".format(image_input_shape))
 
-## Method to resize the image, but not used in the project as it didn't affect the accuracy and training time much.
+## Divided Train and validation data using sci-kit split with factor or 0.1
+train_samples, validation_samples = train_test_split(samples, test_size=0.1)
+
+
+# Function to resize images within the model
+# as the NVidia model was designed with 66x200x3 images in mind
 def resize(img):
-	return cv2.resize(img, (64,64))
+    return ktf.image.resize_images(img, (66, 200))
 
 '''
 Added random brightness on HSV layer of the image so that it could 
@@ -48,61 +51,84 @@ def random_brightness(img):
 '''
 Generator that will generate the data in parallerl of defined batch size
 '''
-def generator(samples, batch_size=FLAGS.batch, is_training=True):
+def generator(samples, batch_size=FLAGS.batch):
 	num_samples = len(samples)
 	while 1:
 		sklearn.utils.shuffle(samples)
 		for offset in range(0, num_samples, batch_size):
-			batch_samples = samples[offset: offset+batch_size]
-			images = []
-			measurments = []
-			for line in batch_samples:
-				steering_center = float(line[3])
+			batch_samples = samples.iloc[offset: offset+batch_size]
+			center_images = []
+			center_measurments = []
+			left_images = []
+			left_measurments = []
+			right_images = []
+			right_measurments = []
+			for i in range(len(batch_samples)):
+				line = batch_samples.iloc[i]
+				steering_center = float(line['steering'])
 				## Correction for left and right images so that car doesn't go off the track.
-				correction = 0.15
+				correction = 0.25
+
 				## center image 
-				source_path = line[0]
-				filename = source_path.split("/")[-1]
-				center_img_filepath = "Dataset/IMG/" + filename
-				images.append(cv2.imread(center_img_filepath))
-				measurments.append(steering_center)
+				source_path = line['center']
+				img = cv2.imread(source_path)
+				#if (abs(steering_center) >= 0.05):
+				center_images.append(img)
+				center_measurments.append(steering_center)
+
+				#center_images.append(random_brightness(img))
+				#center_measurments.append(steering_center)
+				#center_images.append(random_brightness(img))
+				#center_measurments.append(steering_center)
+			
+				## Flipped Center images help in genralizing the model well.
+				center_images.append(cv2.flip(img, 1))
+				center_measurments.append(steering_center * -1.0)
+				#center_images.append(random_brightness(img))
+				#center_measurments.append(steering_center)
+
+
+
 				## left image
-				source_path = line[1]
-				filename = source_path.split("/")[-1]
-				left_img_filepath = "Dataset/IMG/" + filename
-				left_correction = steering_center + correction
-				images.append(cv2.imread(left_img_filepath))
-				measurments.append(left_correction)
+				source_path = line['left']
+				left_correction = steering_center + 0.25
+				img = cv2.imread(source_path)
+				left_images.append(img)
+				left_measurments.append(left_correction)
+				
+				#left_images.append(random_brightness(img))
+				#left_measurments.append(left_correction)
+				#left_images.append(random_brightness(img))
+				#left_measurments.append(left_correction)
+
 				## Right image
-				source_path = line[2]
-				filename = source_path.split("/")[-1]
-				right_img_filepath = "Dataset/IMG/" + filename
-				right_correction = steering_center - correction
-				images.append(cv2.imread(right_img_filepath))
-				measurments.append(right_correction)
-			## Augument Data
-			augumented_images, augumented_measurments = [], []
-
-			for image, measurment in zip(images, measurments):
-				#if (is_training):
-				#image = random_brightness(image)
-
-				#rand_shift_measurment = 1 + np.random.uniform(-0.10,0.10)
-				#measurment = measurment * rand_shift_measurment
-				augumented_images.append(image)
-				augumented_measurments.append(measurment)
-				#if (is_training):
-				## Flipped the images so that model could learn left and right steering angles both of the image.
-				augumented_images.append(cv2.flip(image, 1))
-				augumented_measurments.append(measurment * -1.0)
+				source_path = line['right']
+				right_correction = steering_center - 0.30
+				img = cv2.imread(source_path)
+				right_images.append(img)
+				right_measurments.append(right_correction)
+				
+				#right_images.append(random_brightness(img))
+				#right_measurments.append(right_correction)
+				#right_images.append(random_brightness(img))
+				#right_measurments.append(right_correction)
 
 
-			X_samples = np.array(augumented_images)
-			y_samples = np.array(augumented_measurments)
+			concatenate_images = []
+			concatenate_measurments = []
+			concatenate_images.extend(center_images)
+			concatenate_images.extend(left_images)
+			concatenate_images.extend(right_images)
+			concatenate_measurments.extend(center_measurments)
+			concatenate_measurments.extend(left_measurments)
+			concatenate_measurments.extend(right_measurments)
+
+			X_samples = np.array(concatenate_images)
+			y_samples = np.array(concatenate_measurments)
 			yield sklearn.utils.shuffle(X_samples, y_samples)
 
-train_generator = generator(train_samples, is_training= True)
-validation_generator = generator(validation_samples, is_training= False)
+train_generator = generator(train_samples)
+validation_generator = generator(validation_samples)
 
 ## Model is same as the model mentioned in the NVIDIA paper.
 ### Added drop out layers extra on FC to avoid overfitting.
@@ -119,19 +145,21 @@ model.add(Convolution2D(64, 3,3, subsample=(1,1), activation='relu'))
 model.add(Convolution2D(64, 3,3, subsample=(1,1), activation='relu'))
 model.add(Flatten())
 model.add(Dense(100))
-model.add(Dropout(0.5))
+#model.add(Dropout(0.5))
 model.add(Dense(50))
-model.add(Dropout(0.5))
+#model.add(Dropout(0.5))
 model.add(Dense(10))
 model.add(Dense(1))
 adam = Adam(lr=0.0001)
 model.compile(loss='mse', optimizer = adam, metrics=['accuracy'])
 model.summary()
 model.fit_generator(train_generator, samples_per_epoch= \
-	2 * math.ceil(len(train_samples)), validation_data= validation_generator, \
-	nb_val_samples=len(validation_samples), nb_epoch=FLAGS.epo)
+	(math.ceil(len(train_samples))/FLAGS.batch), validation_data= validation_generator, \
+	nb_val_samples=(math.ceil(len(validation_samples))/FLAGS.batch), nb_epoch=FLAGS.epo)
 ### Save the model 
 model.save('model.h5')
+
+
 
 
 

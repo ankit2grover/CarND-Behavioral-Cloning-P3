@@ -29,7 +29,7 @@ print ("Total number of samples {}".format(len(samples)))
 #print ("Image input shape {}".format(image_input_shape))
 
 ## Divided Train and validation data using sci-kit split with factor or 0.1
-train_samples, validation_samples = train_test_split(samples, test_size=0.1)
+train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
 
 # Function to resize images within the model

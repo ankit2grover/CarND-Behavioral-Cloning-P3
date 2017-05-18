@@ -53,7 +53,8 @@ The model.py file contains the code for training and saving the convolution neur
 
 ###Model Architecture and Training Strategy
 
-I have used NVIDIA architecture and I found it perform really well on any dataset. As a datapreprocessing converting my data images using Cropping 2d (converting images from (160, 320,3) into (76, 320, 3)) and lambday layer for normalization (converting every pixel value in the range of -0.5 to 0.5)
+I have used NVIDIA architecture and I found it perform really well on any dataset. 
+As a data wrangling using Cropping 2d (converting images from (160, 320,3) into (76, 320, 3)) and lambda layer for normalization (converting every pixel value in the range of -0.5 to 0.5)
 
 Please see below the image of my ConvNet and it is developed using Keras Visualization API's.
 
@@ -89,7 +90,6 @@ Also, I have removed 70% off steering angles == 0's to make sure that data is ev
 
 ![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/steering.png)
 
-I just added some fake data by flipping the images 180 degree and teaching the model how image with right steering will look like.
 
 ###Model Architecture and Training Strategy
 
@@ -116,9 +116,6 @@ At the end of the process, the vehicle is able to drive autonomously around the 
 The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes.
 
 ![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/model.png)
-
-
-![alt text][image1]
 
 ####3. Creation of the Training Set & Training Process
 

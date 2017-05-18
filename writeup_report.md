@@ -36,14 +36,15 @@ The goals / steps of this project are the following:
 
 My project includes the following files:
 * model.py containing the script to create and train the model
-* drive.py for driving the car in autonomous mode
+* drive.py for driving the car in autonomous mode and it has been modified to convert RGB channel into HSV.
 * model.h5 containing a trained convolution neural network 
 * writeup_report.md or writeup_report.pdf summarizing the results
+* run1.mp4 final ouput video
 
 ####2. Submission includes functional code
 Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track by executing 
 
-python drive.py model.h5
+python drive.py model.h5 --epo 5
 
 
 ####3. Submission code is usable and readable
@@ -52,61 +53,41 @@ The model.py file contains the code for training and saving the convolution neur
 
 ###Model Architecture and Training Strategy
 
-____________________________________________________________________________________________________
-Layer (type)                     Output Shape          Param #     Connected to                     
-====================================================================================================
-cropping2d_1 (Cropping2D)        (None, 80, 320, 3)    0           cropping2d_input_1[0][0]         
-____________________________________________________________________________________________________
-lambda_1 (Lambda)                (None, 80, 320, 3)    0           cropping2d_1[0][0]               
-____________________________________________________________________________________________________
-convolution2d_1 (Convolution2D)  (None, 38, 158, 24)   1824        lambda_1[0][0]                   
-____________________________________________________________________________________________________
-convolution2d_2 (Convolution2D)  (None, 17, 77, 36)    21636       convolution2d_1[0][0]            
-____________________________________________________________________________________________________
-convolution2d_3 (Convolution2D)  (None, 7, 37, 48)     43248       convolution2d_2[0][0]            
-____________________________________________________________________________________________________
-convolution2d_4 (Convolution2D)  (None, 5, 35, 64)     27712       convolution2d_3[0][0]            
-____________________________________________________________________________________________________
-convolution2d_5 (Convolution2D)  (None, 3, 33, 64)     36928       convolution2d_4[0][0]            
-____________________________________________________________________________________________________
-flatten_1 (Flatten)              (None, 6336)          0           convolution2d_5[0][0]            
-____________________________________________________________________________________________________
-dense_1 (Dense)                  (None, 100)           633700      flatten_1[0][0]                  
-____________________________________________________________________________________________________
-dropout_1 (Dropout)              (None, 100)           0           dense_1[0][0]                    
-____________________________________________________________________________________________________
-dense_2 (Dense)                  (None, 50)            5050        dropout_1[0][0]                  
-____________________________________________________________________________________________________
-dropout_2 (Dropout)              (None, 50)            0           dense_2[0][0]                    
-____________________________________________________________________________________________________
-dense_3 (Dense)                  (None, 10)            510         dropout_2[0][0]                  
-____________________________________________________________________________________________________
-dense_4 (Dense)                  (None, 1)             11          dense_3[0][0]                    
-====================================================================================================
+I have used NVIDIA architecture and I found it perform really well on any dataset. As a datapreprocessing converting my data images using Cropping 2d (converting images from (160, 320,3) into (76, 320, 3)) and lambday layer for normalization (converting every pixel value in the range of -0.5 to 0.5)
+
+Please see below the image of my ConvNet and it is developed using Keras Visualization API's.
+
+![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/model.png)
 
 ####1. An appropriate model architecture has been employed
 My model consists of below mentioned layers.
-1) Cropping2D that crops 60 pixels from top and 20 pixels from the bottom of the image as that is irrelevant data information and only contains, trees. It doesn't help much in training the model. (model.py line 110)
+1) Cropping2D that crops 60 pixels from top and 24 pixels from the bottom of the image as that is irrelevant data information and only contains, trees. It doesn't help much in training the model. (model.py line 110)
 2) Lambday layer that normalized the image pixels in the range of -0.5 to 0.5. (model.py line 111)
 3) Convolution neural network with 5x5 and 3x3 filter sizes and depths of 24,36,48 and 64, 64 respectively.(model.py lines 112-119).
 4) Fully Connected layers of hidden sizes 100, 50, 10.
-4) Drop out in fully connected layers of probability 0.5 to avoid overfitting.
+4) Drop out in fully connected layers of probability 0.5, 0.2, 0.2 to avoid overfitting.
 
-The model includes RELU layers to introduce nonlinearity for every convolution layereee, and the data is normalized in the model using a Keras lambda layer (code line 18). 
+The model includes ELU layers to introduce nonlinearity for every convolution layereee, and the data is normalized in the model using a Keras lambda layer (code line 18).  I also tried with RELU activation and found that ELU layer provides better in comparison to RELU.
 
 ####2. Attempts to reduce overfitting in the model
 
-The model contains dropout layers in the fully connected layers in order to reduce overfitting with probability of 0.5 (model.py lines 21). 
+The model contains dropout layers in the fully connected layers in order to reduce overfitting with probability of 0.5, 0.2, 0.2 (model.py lines 21). 
 
-The model was trained and validated on different data sets to ensure that the model was not overfitting (code line 31). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
+The model was trained after shuffling and validated on different shuffled data sets to ensure that the model was not overfitting (code line 31). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
 
 ####3. Model parameter tuning
 
-The model used an adam optimizer, and the learning rate is tuned from 1e-3 to 1e-4. Model performed better after tuning the learning rate.
+The model used an adam optimizer, and the learning rate is 1e-3. Model performed better really well on the default learning rate.
 
 ####4. Appropriate training data
 
 Training data was chosen to keep the vehicle driving on the road. I struggled in creating my own data, that's why used udacity sample data to train the model.
+
+I have converted RGB channel images into HSV in helpers/data.py file as I found that sharp turn dirty road is not detecting well with RGB images.
+
+Also, I have removed 70% off steering angles == 0's to make sure that data is evenly distributed. As you can see below in the image that data is unevenly distributed and most of the data is at steering angle == 0's, it is making my model biased towards steering angles =0 ouput. 
+
+![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/steering.png)
 
 I just added some fake data by flipping the images 180 degree and teaching the model how image with right steering will look like.
 
@@ -119,7 +100,7 @@ The overall strategy for deriving a model architecture was to make sure that mod
 My first step was to use a use a cropping layer to make sure that only relevant road information is fed into the model.
 Second, I designed the model similarily like NVIDIA paper. Also added drop out layers to avoid any overfitting.
 
-In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that my first model had a low mean squared error on the training set and a low mean squared error on the validation set. This implied that the model was underfitting. I adjusted the correction parameter to .15 (line 62 model.py)   
+In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that my first model had a low mean squared error on the training set and a low mean squared error on the validation set. This implied that the model was underfitting. I adjusted the correction parameter to .25 (line 62 model.py)   
 
 To combat the overfitting, I modified the model and added drop out in FCs layers
 
@@ -127,42 +108,14 @@ The final step was to run the simulator to see how well the car was driving arou
 
 At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
 
+
+
+
 ####2. Final Model Architecture
 
 The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes.
 
-Summary of the model.
-____________________________________________________________________________________________________
-Layer (type)                     Output Shape          Param #     Connected to                     
-====================================================================================================
-cropping2d_1 (Cropping2D)        (None, 80, 320, 3)    0           cropping2d_input_1[0][0]         
-____________________________________________________________________________________________________
-lambda_1 (Lambda)                (None, 80, 320, 3)    0           cropping2d_1[0][0]               
-____________________________________________________________________________________________________
-convolution2d_1 (Convolution2D)  (None, 38, 158, 24)   1824        lambda_1[0][0]                   
-____________________________________________________________________________________________________
-convolution2d_2 (Convolution2D)  (None, 17, 77, 36)    21636       convolution2d_1[0][0]            
-____________________________________________________________________________________________________
-convolution2d_3 (Convolution2D)  (None, 7, 37, 48)     43248       convolution2d_2[0][0]            
-____________________________________________________________________________________________________
-convolution2d_4 (Convolution2D)  (None, 5, 35, 64)     27712       convolution2d_3[0][0]            
-____________________________________________________________________________________________________
-convolution2d_5 (Convolution2D)  (None, 3, 33, 64)     36928       convolution2d_4[0][0]            
-____________________________________________________________________________________________________
-flatten_1 (Flatten)              (None, 6336)          0           convolution2d_5[0][0]            
-____________________________________________________________________________________________________
-dense_1 (Dense)                  (None, 100)           633700      flatten_1[0][0]                  
-____________________________________________________________________________________________________
-dropout_1 (Dropout)              (None, 100)           0           dense_1[0][0]                    
-____________________________________________________________________________________________________
-dense_2 (Dense)                  (None, 50)            5050        dropout_1[0][0]                  
-____________________________________________________________________________________________________
-dropout_2 (Dropout)              (None, 50)            0           dense_2[0][0]                    
-____________________________________________________________________________________________________
-dense_3 (Dense)                  (None, 10)            510         dropout_2[0][0]                  
-____________________________________________________________________________________________________
-dense_4 (Dense)                  (None, 1)             11          dense_3[0][0]                    
-====================================================================================================
+![alt text](https://github.com/ankit2grover/CarND-Behavioral-Cloning-P3/blob/master/images/model.png)
 
 
 ![alt text][image1]
@@ -177,7 +130,11 @@ To augment the data set, I also flipped images and angles thinking that this wou
 
 Randomly shuffled the data set and put 20% of the data into a validation set. 
 
-After augumentation, I had 12856 number of data samples. I then preprocessed this data by using keras Cropping2D and lambda layers.
+Before augumentation I had 12058 number of data samples consist of centre, left and right camera images. Then I shuffled the data and divided 80% of training and 20% of validation data
+
+Then I changed the brightness and flipped the centre images to feed more data so that my model should be able to perform well on any brightness well and flipping the images helped in generalizing my model well.
+
+After augumentation, I had 559,419 number of data samples. I then preprocessed this data by using keras Cropping2D and lambda layers.
 
 I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was 5 as validation accuracy doesn't change much after that. 
 
